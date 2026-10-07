@@ -7,6 +7,7 @@ from an environment variable (or `token` in the config) and never written anywhe
 from __future__ import annotations
 
 import base64
+import http.client
 import json
 import os
 import re
@@ -58,6 +59,8 @@ def _get(url: str, headers: dict[str, str]) -> Any:
         raise ApiError(f"{host} returned HTTP {e.code}: {detail or e.reason}") from None
     except urllib.error.URLError as e:
         raise ApiError(f"Could not reach {host}: {e.reason}") from None
+    except (OSError, http.client.HTTPException) as e:  # timeouts, dropped connections
+        raise ApiError(f"Could not reach {host}: {e or type(e).__name__}") from None
     except json.JSONDecodeError:
         raise ApiError(f"{host} returned a response that isn't JSON.") from None
 
@@ -105,12 +108,13 @@ def fetch_harvest(src: Source, start: date, end: date) -> list[Entry]:
             "https://id.getharvest.com/developers"
         )
     headers = {"Authorization": f"Bearer {resolve_token(src)}", "Harvest-Account-Id": account}
+    params: dict[str, Any] = {"from": start.isoformat(), "to": end.isoformat(), "per_page": 2000}
+    if not src.all_users:  # admin tokens otherwise see the whole team's time
+        params["user_id"] = _get(f"{HARVEST_URL}/users/me", headers)["id"]
     entries: list[Entry] = []
     page: int | None = 1
     while page:
-        query = urllib.parse.urlencode(
-            {"from": start.isoformat(), "to": end.isoformat(), "page": page, "per_page": 2000}
-        )
+        query = urllib.parse.urlencode({**params, "page": page})
         data = _get(f"{HARVEST_URL}/time_entries?{query}", headers)
         for t in data.get("time_entries", []):
             if t.get("is_running") or (src.billable_only and not t.get("billable")):
@@ -132,6 +136,7 @@ def fetch_harvest(src: Source, start: date, end: date) -> list[Entry]:
 def fetch_toggl(src: Source, start: date, end: date) -> list[Entry]:
     auth = base64.b64encode(f"{resolve_token(src)}:api_token".encode()).decode()
     headers = {"Authorization": f"Basic {auth}"}
+    workspace = src.workspace_id or str(_get(f"{TOGGL_URL}/me", headers)["default_workspace_id"])
     # Pad the range by a day: Toggl filters in UTC, the invoice month is in local time.
     query = urllib.parse.urlencode(
         {
@@ -145,7 +150,7 @@ def fetch_toggl(src: Source, start: date, end: date) -> list[Entry]:
         seconds = t.get("duration") or 0
         if seconds <= 0 or t.get("server_deleted_at"):  # negative = timer still running
             continue
-        if src.workspace_id and str(t.get("workspace_id")) != src.workspace_id:
+        if str(t.get("workspace_id")) != workspace:
             continue
         if src.billable_only and not t.get("billable"):
             continue
@@ -166,6 +171,8 @@ def fetch_clockify(src: Source, start: date, end: date, page_size: int = 1000) -
     headers = {"X-Api-Key": resolve_token(src)}
     user = _get(f"{CLOCKIFY_URL}/user", headers)
     workspace = src.workspace_id or user.get("activeWorkspace") or user.get("defaultWorkspace")
+    if not workspace:
+        raise ApiError("Clockify reports no active workspace. Set `workspace_id` under [source].")
     base = f"{CLOCKIFY_URL}/workspaces/{workspace}/user/{user['id']}/time-entries"
     entries: list[Entry] = []
     page = 1

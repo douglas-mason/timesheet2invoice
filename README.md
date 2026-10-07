@@ -126,10 +126,11 @@ Other `[source]` options:
 
 - `token_env` reads the token from a differently named variable, which helps if you bill from more than one account.
 - `token` holds the token in the config file itself. The default `.gitignore` keeps `timesheet2invoice.toml` out of git, but an environment variable is safer.
-- `workspace_id` picks a Toggl or Clockify workspace. The default is your current one.
+- `workspace_id` picks a Toggl or Clockify workspace. The default is your default (Toggl) or active (Clockify) workspace.
+- `all_users = true` (Harvest) bills every person's time the token can see. By default only your own entries are billed, the same as Toggl and Clockify.
 - `billable_only = false` bills every entry. Toggl's free plan has no billable flag, so free-plan users need this.
 
-Running timers are skipped. Toggl and Clockify return only your own entries; Harvest returns everyone's that your token can see, so use `client` (or a token for a single user) to narrow it down. Toggl's API may not return entries from far back; if an older month comes back empty, use a CSV export for it.
+Running timers are skipped. Harvest bills `hours`, not `rounded_hours`; set `round_minutes` to match your Harvest rounding. Toggl and Clockify entries are dated in your computer's time zone, so run the tool in the same time zone you track in. Toggl's API may not return entries from far back; if an older month comes back empty, use a CSV export for it.
 
 ## A monthly routine
 

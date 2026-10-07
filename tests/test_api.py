@@ -62,6 +62,7 @@ def test_harvest_paginates_and_filters(fake_http, monkeypatch):
             "next_page": None,
         },
     }
+    routes["api.harvestapp.com/v2/users/me"] = {"id": 9}
     routes["api.harvestapp.com/v2/time_entries"] = lambda q: pages[q["page"]]
 
     src = Source("harvest", "HARVEST_ACCESS_TOKEN", account_id="42", client="acme corp")
@@ -71,10 +72,20 @@ def test_harvest_paginates_and_filters(fake_http, monkeypatch):
         api.Entry(date(2026, 9, 2), Decimal("2.5"), "Website", "Build login"),
         api.Entry(date(2026, 9, 30), Decimal("1.25"), "Website", "Development"),
     ]
-    _, query, headers = calls[0]
+    _, query, headers = calls[1]
     assert query["from"] == "2026-09-01" and query["to"] == "2026-09-30"
+    assert query["user_id"] == "9"  # only the token owner's time
     assert headers == {"Authorization": "Bearer tok", "Harvest-Account-Id": "42"}
-    assert len(calls) == 2
+    assert len(calls) == 3
+
+
+def test_harvest_all_users(fake_http, monkeypatch):
+    routes, calls = fake_http
+    monkeypatch.setenv("HARVEST_ACCESS_TOKEN", "tok")
+    routes["api.harvestapp.com/v2/time_entries"] = {"time_entries": [], "next_page": None}
+    src = Source("harvest", "HARVEST_ACCESS_TOKEN", account_id="42", all_users=True)
+    assert api.fetch_entries(src, "2026-09") == []
+    assert len(calls) == 1 and "user_id" not in calls[0][1]
 
 
 def test_harvest_needs_account_id(fake_http, monkeypatch):
@@ -92,7 +103,7 @@ def test_missing_token_points_to_developer_page(fake_http):
 def test_token_from_config_when_env_unset(fake_http):
     routes, calls = fake_http
     routes["api.harvestapp.com/v2/time_entries"] = {"time_entries": [], "next_page": None}
-    src = Source("harvest", "HARVEST_ACCESS_TOKEN", token="cfgtok", account_id="42")
+    src = Source("harvest", "HARVEST_ACCESS_TOKEN", token="cfgtok", account_id="42", all_users=True)
     assert api.fetch_entries(src, "2026-09") == []
     assert calls[0][2]["Authorization"] == "Bearer cfgtok"
 
@@ -125,11 +136,14 @@ def test_toggl(fake_http, monkeypatch):
 def test_toggl_billable_only_off(fake_http, monkeypatch):
     routes, _ = fake_http
     monkeypatch.setenv("TOGGL_API_TOKEN", "abc")
+    routes["api.track.toggl.com/api/v9/me"] = {"default_workspace_id": 7}
     routes["api.track.toggl.com/api/v9/me/time_entries"] = [
-        {"start": "2026-09-15T12:00:00Z", "duration": 1800, "billable": False},
+        {"start": "2026-09-15T12:00:00Z", "duration": 1800, "billable": False, "workspace_id": 7},
+        {"start": "2026-09-16T12:00:00Z", "duration": 1800, "billable": False, "workspace_id": 8},
     ]
     src = Source("toggl", "TOGGL_API_TOKEN", billable_only=False)
-    assert [e.hours for e in api.fetch_entries(src, "2026-09")] == [Decimal("0.5")]
+    # Without workspace_id, only the default workspace is billed.
+    assert [e.date.day for e in api.fetch_entries(src, "2026-09")] == [15]
 
 
 def test_clockify_paginates(fake_http, monkeypatch):
@@ -184,6 +198,19 @@ def test_source_config(tmp_path):
     with pytest.raises(ConfigError, match="tracker"):
         load_config(f)
 
+    f.write_text(base + '[source]\ntracker="toggl"\nbillable_only="false"\n')
+    with pytest.raises(ConfigError, match="billable_only"):
+        load_config(f)
+
+
+def test_network_failures_become_api_errors(monkeypatch):
+    def boom(*a, **kw):
+        raise TimeoutError("timed out")
+
+    monkeypatch.setattr(api.urllib.request, "urlopen", boom)
+    with pytest.raises(api.ApiError, match="Could not reach api.clockify.me: timed out"):
+        api._get("https://api.clockify.me/api/v1/user", {})
+
 
 def test_generate_from_api(tmp_path, monkeypatch, fake_http, capsys):
     routes, _ = fake_http
@@ -192,6 +219,7 @@ def test_generate_from_api(tmp_path, monkeypatch, fake_http, capsys):
     assert main(["init"]) == 0
     cfg = tmp_path / "timesheet2invoice.toml"
     cfg.write_text(cfg.read_text() + '\n[source]\ntracker = "harvest"\naccount_id = "42"\n')
+    routes["api.harvestapp.com/v2/users/me"] = {"id": 9}
     routes["api.harvestapp.com/v2/time_entries"] = {
         "time_entries": [harvest_entry("2026-09-02", 4.0), harvest_entry("2026-09-09", 6.0)],
         "next_page": None,

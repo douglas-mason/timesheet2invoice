@@ -46,6 +46,7 @@ class Source:
     workspace_id: str = ""  # Toggl / Clockify; defaults to the user's current workspace
     client: str = ""  # only bill entries for this client (as named in the tracker)
     billable_only: bool = True
+    all_users: bool = False  # Harvest: bill the whole team's time, not just yours
 
 
 @dataclass
@@ -77,6 +78,9 @@ def _source(data: dict) -> Source | None:
     tracker = str(data.get("tracker", "")).lower()
     if tracker not in TRACKERS:
         raise ConfigError(f"[source] `tracker` must be one of {', '.join(TRACKERS)}.")
+    for key in ("billable_only", "all_users"):
+        if not isinstance(data.get(key, False), bool):
+            raise ConfigError(f"[source] `{key}` must be true or false (without quotes).")
     return Source(
         tracker=tracker,
         token_env=str(data.get("token_env", TOKEN_ENV[tracker])),
@@ -84,7 +88,8 @@ def _source(data: dict) -> Source | None:
         account_id=str(data.get("account_id", "")),
         workspace_id=str(data.get("workspace_id", "")),
         client=str(data.get("client", "")).strip(),
-        billable_only=bool(data.get("billable_only", True)),
+        billable_only=data.get("billable_only", True),
+        all_users=data.get("all_users", False),
     )
 
 

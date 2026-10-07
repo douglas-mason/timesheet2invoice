@@ -35,6 +35,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     path.write_text(template, encoding="utf-8")
     print(f"Wrote {path}. Edit your business, client and payment details, then run:")
     print(f"  timesheet2invoice generate <export.csv> -c {path}")
+    print("Or set up [source] at the bottom of the file to pull hours from your tracker's API.")
     return 0
 
 

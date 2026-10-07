@@ -47,5 +47,6 @@ notes = "Thank you for your business!"
 #   TOGGL_API_TOKEN       https://track.toggl.com/profile
 #   CLOCKIFY_API_KEY      https://app.clockify.me/user/preferences#advanced
 # token_env = "HARVEST_ACCESS_TOKEN"  # use a different variable name, e.g. one per account
-# workspace_id = ""          # Toggl / Clockify; default is your current workspace
+# workspace_id = ""          # Toggl / Clockify; default is your default/current workspace
+# all_users = false          # Harvest: true bills everyone's time the token can see, not just yours
 # billable_only = true       # false bills every entry (e.g. Toggl's free plan has no billable flag)
