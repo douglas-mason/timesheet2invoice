@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+
+# Your real config and generated invoices contain client and banking details.
+timesheet2invoice.toml
+invoices/
+*.csv
+!examples/*.csv

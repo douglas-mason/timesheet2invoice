@@ -1,0 +1,37 @@
+# timesheet2invoice configuration
+# One config file per client. Paths are relative to this file.
+
+[business]
+name = "Your Agency LLC"
+address = ["123 Main Street", "City, ST 00000"]
+email = "billing@youragency.com"
+phone = "(555) 555-5555"
+
+[client]
+name = "Acme Corp"
+contact = "Accounts Payable"
+address = ["456 Client Ave", "City, ST 00000"]
+email = "ap@client.com"
+
+[billing]
+hourly_rate = 100.00
+net_days = 15              # payment due this many days after the invoice date
+currency = "$"
+tax_percent = 0            # e.g. 8.25 adds a tax line; 0 omits it
+group_by = "project"       # project | description | day | entry
+round_minutes = 15         # round each line to this increment; 0 = exact
+rounding = "nearest"       # nearest | up
+# date_format = "%d/%m/%Y" # only needed if your export uses day-first dates
+
+[invoice]
+prefix = "INV"             # numbers look like INV-2026-001
+start_number = 1           # first number to use when the ledger is empty
+output_dir = "invoices"
+ledger = "invoices/ledger.csv"
+include_time_log = true    # add a page listing every time entry
+accent_color = "#1f3a5f"
+payment_instructions = [
+  "ACH: Bank Name, Routing #XXXXXXXXX, Account #XXXXXXXX",
+  "Or mail a check payable to Your Agency LLC",
+]
+notes = "Thank you for your business!"

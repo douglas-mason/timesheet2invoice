@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "timesheet2invoice"
+dynamic = ["version"]
+description = "Turn Toggl, Clockify or Harvest CSV exports into PDF invoices for hourly billing."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Douglas Mason" }]
+requires-python = ">=3.10"
+dependencies = [
+  "reportlab>=4.0",
+  "tomli>=1.1; python_version < '3.11'",
+]
+keywords = ["invoice", "invoicing", "timesheet", "freelance", "consulting", "toggl", "clockify", "harvest", "pdf"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Topic :: Office/Business :: Financial :: Accounting",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "pypdf>=4", "ruff>=0.5"]
+
+[project.scripts]
+timesheet2invoice = "timesheet2invoice.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/douglas-mason/timesheet2invoice"
+Issues = "https://github.com/douglas-mason/timesheet2invoice/issues"
+
+[tool.hatch.version]
+path = "src/timesheet2invoice/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = ["docs/*.pdf"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,4 @@
+Project,Client,Description,Task,User,Group,Email,Tags,Billable,Start Date,Start Time,End Date,End Time,Duration (h),Duration (decimal),Billable Rate (USD),Billable Amount (USD)
+API Integration,Acme Corp,Auth endpoints,,Alex,,alex@example.com,,Yes,09/02/2026,09:00:00 AM,09/02/2026,12:20:00 PM,03:20:00,3.33,100.00,333.33
+Dashboard,Acme Corp,Charts & filters,,Alex,,alex@example.com,,Yes,09/10/2026,09:00:00 AM,09/10/2026,03:40:00 PM,06:40:00,6.67,100.00,666.67
+Dashboard,Acme Corp,Internal admin,,Alex,,alex@example.com,,No,09/11/2026,09:00:00 AM,09/11/2026,10:00:00 AM,01:00:00,1.00,0.00,0.00

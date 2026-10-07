@@ -1,0 +1,4 @@
+Date,Client,Project,Project Code,Task,Notes,Hours,Hours Rounded,Billable?,Invoiced?,First Name,Last Name
+2026-09-02,Acme Corp,API Integration,,Development,Auth endpoints,3.33,3.5,Yes,No,Alex,Smith
+2026-09-10,Acme Corp,Dashboard,,Development,Charts & filters,6.67,6.75,Yes,No,Alex,Smith
+2026-09-11,Acme Corp,Dashboard,,Admin,Internal admin,1.0,1.0,No,No,Alex,Smith

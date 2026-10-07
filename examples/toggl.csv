@@ -1,0 +1,8 @@
+User,Email,Client,Project,Task,Description,Billable,Start date,Start time,End date,End time,Duration,Tags,Amount (USD)
+Alex,alex@example.com,Acme Corp,API Integration,,Auth endpoints,Yes,2026-09-02,09:00:00,2026-09-02,12:20:00,03:20:00,,
+Alex,alex@example.com,Acme Corp,API Integration,,Webhook retry logic,Yes,2026-09-03,13:00:00,2026-09-03,17:05:00,04:05:00,,
+Alex,alex@example.com,Acme Corp,Dashboard,,Charts & filters,Yes,2026-09-10,09:00:00,2026-09-10,15:40:00,06:40:00,,
+Alex,alex@example.com,Acme Corp,Dashboard,,Internal admin,No,2026-09-11,09:00:00,2026-09-11,10:00:00,01:00:00,,
+Alex,alex@example.com,Acme Corp,Dashboard,,Date-range picker,Yes,2026-09-17,10:00:00,2026-09-17,14:15:00,04:15:00,,
+Alex,alex@example.com,Acme Corp,Code Review,,PR reviews,Yes,2026-09-24,10:00:00,2026-09-24,11:50:00,01:50:00,,
+Alex,alex@example.com,Acme Corp,API Integration,,Rate limiting,Yes,2026-10-01,10:00:00,2026-10-01,11:00:00,01:00:00,,
