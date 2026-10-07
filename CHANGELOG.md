@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `generate` can pull hours from the Harvest, Toggl Track or Clockify API instead of a CSV. Set up a `[source]` section in the config and a personal access token in an environment variable.
+
 ## 0.1.0 (2026-10-07)
 
 First release.

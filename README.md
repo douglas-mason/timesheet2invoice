@@ -3,7 +3,7 @@
 [![CI](https://github.com/douglas-mason/timesheet2invoice/actions/workflows/ci.yml/badge.svg)](https://github.com/douglas-mason/timesheet2invoice/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Turn a CSV export from your time tracker into a PDF invoice for hourly work. Built for freelancers and small consultancies that bill by the hour.
+Turn a CSV export from your time tracker (or its API) into a PDF invoice for hourly work. Built for freelancers and small consultancies that bill by the hour.
 
 ```console
 $ timesheet2invoice generate toggl-september.csv
@@ -22,6 +22,7 @@ Wrote invoices/INV-2026-001_Acme_Corp_2026-09.pdf
 ## Features
 
 - Reads exports from **Toggl Track, Clockify and Harvest**, or any CSV with a date column and an hours column
+- Or skips the export and pulls hours straight from the Harvest, Toggl Track or Clockify API with a personal access token
 - Skips entries marked non-billable and anything outside the billing month
 - Groups line items by project, description or day, or lists each entry on its own line
 - Rounds each line to the nearest 6, 15 or 30 minutes (or rounds up, or not at all)
@@ -57,7 +58,7 @@ By default, `generate` bills the previous calendar month and dates the invoice t
 | Command | What it does |
 |---|---|
 | `init [path]` | Write a commented starter config |
-| `generate <csv>` (alias `gen`) | Create an invoice. Options: `-m 2026-09` sets the month, `--issue-date 2026-10-01` sets the invoice date, `-n` does a dry run, `--force` allows a second invoice for the same month |
+| `generate [csv]` (alias `gen`) | Create an invoice. Leave out the CSV to pull hours from the API set up under `[source]`. Options: `-m 2026-09` sets the month, `--issue-date 2026-10-01` sets the invoice date, `-n` does a dry run, `--force` allows a second invoice for the same month |
 | `status` | List unpaid invoices with days until due or days overdue. `-a` includes paid invoices |
 | `paid <invoice-no>` | Mark an invoice paid (today by default, or `--date YYYY-MM-DD`) |
 
@@ -97,6 +98,40 @@ Durations can be decimal hours (`2.75`) or clock format (`2:45`, `02:45:00`). Da
 
 If your tracker's export isn't recognized, [open an issue](https://github.com/douglas-mason/timesheet2invoice/issues/new?template=csv-format.md) and paste its header row.
 
+## Pulling hours from the API
+
+Instead of exporting a CSV every month, you can let `generate` download the month's entries itself. Add a `[source]` section to the config:
+
+```toml
+[source]
+tracker = "harvest"        # harvest | toggl | clockify
+account_id = "123456"      # Harvest only
+client = "Acme Corp"       # optional: only bill this client's entries, as named in the tracker
+```
+
+Then put your token in an environment variable and run `generate` without a CSV:
+
+```bash
+export HARVEST_ACCESS_TOKEN=...   # or TOGGL_API_TOKEN / CLOCKIFY_API_KEY
+timesheet2invoice generate -n
+```
+
+| Tracker | Where to get a token | Environment variable |
+|---|---|---|
+| Harvest | [id.getharvest.com/developers](https://id.getharvest.com/developers) → Create new personal access token. The page also shows your account ID. | `HARVEST_ACCESS_TOKEN` (and optionally `HARVEST_ACCOUNT_ID`) |
+| Toggl Track | Profile settings → API Token | `TOGGL_API_TOKEN` |
+| Clockify | Preferences → Advanced → Manage API keys | `CLOCKIFY_API_KEY` |
+
+Other `[source]` options:
+
+- `token_env` reads the token from a differently named variable, which helps if you bill from more than one account.
+- `token` holds the token in the config file itself. The default `.gitignore` keeps `timesheet2invoice.toml` out of git, but an environment variable is safer.
+- `workspace_id` picks a Toggl or Clockify workspace. The default is your default (Toggl) or active (Clockify) workspace.
+- `all_users = true` (Harvest) bills every person's time the token can see. By default only your own entries are billed, the same as Toggl and Clockify.
+- `billable_only = false` bills every entry. Toggl's free plan has no billable flag, so free-plan users need this.
+
+Running timers are skipped. Harvest bills `hours`, not `rounded_hours`; set `round_minutes` to match your Harvest rounding. Toggl and Clockify entries are dated in your computer's time zone, so run the tool in the same time zone you track in. Toggl's API may not return entries from far back; if an older month comes back empty, use a CSV export for it.
+
 ## A monthly routine
 
 1. On the 1st, finish logging last month's time and check that billable entries are marked.
@@ -106,7 +141,7 @@ If your tracker's export isn't recognized, [open an issue](https://github.com/do
 
 ## Privacy
 
-Everything runs locally. The tool makes no network requests. The `.gitignore` excludes `timesheet2invoice.toml`, `invoices/` and CSV files, so client and bank details won't end up in a commit by accident.
+Everything runs locally. The tool makes no network requests unless you add a `[source]` section, and then it only contacts that tracker's API. The `.gitignore` excludes `timesheet2invoice.toml`, `invoices/` and CSV files, so client and bank details won't end up in a commit by accident.
 
 ## Development
 

@@ -14,6 +14,12 @@ else:  # pragma: no cover
 
 GROUP_BY = ("project", "description", "day", "entry")
 ROUNDING = ("nearest", "up")
+TRACKERS = ("harvest", "toggl", "clockify")
+TOKEN_ENV = {
+    "harvest": "HARVEST_ACCESS_TOKEN",
+    "toggl": "TOGGL_API_TOKEN",
+    "clockify": "CLOCKIFY_API_KEY",
+}
 
 
 class ConfigError(ValueError):
@@ -27,6 +33,20 @@ class Party:
     email: str = ""
     phone: str = ""
     contact: str = ""
+
+
+@dataclass
+class Source:
+    """Where to pull hours from when no CSV is given: a tracker's API."""
+
+    tracker: str
+    token_env: str
+    token: str = ""
+    account_id: str = ""  # Harvest only
+    workspace_id: str = ""  # Toggl / Clockify; defaults to the user's current workspace
+    client: str = ""  # only bill entries for this client (as named in the tracker)
+    billable_only: bool = True
+    all_users: bool = False  # Harvest: bill the whole team's time, not just yours
 
 
 @dataclass
@@ -49,6 +69,28 @@ class Config:
     accent_color: str = "#1f3a5f"
     payment_instructions: list[str] = field(default_factory=list)
     notes: str = ""
+    source: Source | None = None
+
+
+def _source(data: dict) -> Source | None:
+    if not data:
+        return None
+    tracker = str(data.get("tracker", "")).lower()
+    if tracker not in TRACKERS:
+        raise ConfigError(f"[source] `tracker` must be one of {', '.join(TRACKERS)}.")
+    for key in ("billable_only", "all_users"):
+        if not isinstance(data.get(key, False), bool):
+            raise ConfigError(f"[source] `{key}` must be true or false (without quotes).")
+    return Source(
+        tracker=tracker,
+        token_env=str(data.get("token_env", TOKEN_ENV[tracker])),
+        token=str(data.get("token", "")),
+        account_id=str(data.get("account_id", "")),
+        workspace_id=str(data.get("workspace_id", "")),
+        client=str(data.get("client", "")).strip(),
+        billable_only=data.get("billable_only", True),
+        all_users=data.get("all_users", False),
+    )
 
 
 def _party(data: dict, section: str) -> Party:
@@ -98,6 +140,7 @@ def load_config(path: str | Path) -> Config:
         accent_color=str(invoice.get("accent_color", "#1f3a5f")),
         payment_instructions=list(invoice.get("payment_instructions", [])),
         notes=str(invoice.get("notes", "")),
+        source=_source(raw.get("source", {})),
     )
 
     if cfg.hourly_rate <= 0:

@@ -34,6 +34,7 @@ src/timesheet2invoice/
   cli.py        argument parsing and the commands
   config.py     TOML loading and validation
   parsing.py    CSV reading and column detection
+  api.py        fetching entries from the Harvest, Toggl and Clockify APIs
   billing.py    grouping, rounding, totals, due dates
   ledger.py     invoice numbering and payment tracking
   render.py     the PDF layout
