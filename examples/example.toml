@@ -35,3 +35,17 @@ payment_instructions = [
   "Or mail a check payable to Your Agency LLC",
 ]
 notes = "Thank you for your business!"
+
+# Optional: pull hours straight from your tracker instead of exporting a CSV.
+# Then run `timesheet2invoice generate` with no CSV argument.
+# [source]
+# tracker = "harvest"        # harvest | toggl | clockify
+# account_id = "123456"      # Harvest only; shown next to your token
+# client = "Acme Corp"  # only bill this client's entries (name as in the tracker)
+# The token is read from an environment variable, so it stays out of this file:
+#   HARVEST_ACCESS_TOKEN  https://id.getharvest.com/developers
+#   TOGGL_API_TOKEN       https://track.toggl.com/profile
+#   CLOCKIFY_API_KEY      https://app.clockify.me/user/preferences#advanced
+# token_env = "HARVEST_ACCESS_TOKEN"  # use a different variable name, e.g. one per account
+# workspace_id = ""          # Toggl / Clockify; default is your current workspace
+# billable_only = true       # false bills every entry (e.g. Toggl's free plan has no billable flag)

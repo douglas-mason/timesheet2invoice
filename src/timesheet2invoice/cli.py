@@ -9,6 +9,7 @@ from importlib.resources import files
 from pathlib import Path
 
 from . import __version__
+from .api import fetch_entries
 from .billing import build_invoice, previous_month
 from .config import ConfigError, load_config
 from .ledger import Ledger, describe_status
@@ -52,11 +53,24 @@ def cmd_generate(args: argparse.Namespace) -> int:
         )
         return 1
 
-    entries = read_entries(args.csv, cfg.date_format)
+    if args.csv:
+        entries, origin = read_entries(args.csv, cfg.date_format), str(args.csv)
+    elif cfg.source:
+        origin = cfg.source.tracker.capitalize()
+        print(f"Fetching {month} from {origin}...", file=sys.stderr)
+        entries = fetch_entries(cfg.source, month)
+    else:
+        print(
+            "Give a CSV export, or add a [source] section to the config to pull hours "
+            "from Harvest, Toggl or Clockify.",
+            file=sys.stderr,
+        )
+        return 2
+
     number = ledger.next_number(cfg.prefix, issue.year, cfg.start_number)
     inv = build_invoice(entries, cfg, month, issue, number)
     if not inv.lines:
-        print(f"No billable time found for {month} in {args.csv}.", file=sys.stderr)
+        print(f"No billable time found for {month} in {origin}.", file=sys.stderr)
         return 1
 
     sym = cfg.currency
@@ -133,8 +147,13 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--force", action="store_true", help="overwrite an existing file")
     sp.set_defaults(func=cmd_init)
 
-    sp = sub.add_parser("generate", aliases=["gen"], help="create an invoice from a CSV export")
-    sp.add_argument("csv", type=Path, help="CSV export from Toggl, Clockify, Harvest, etc.")
+    sp = sub.add_parser("generate", aliases=["gen"], help="create an invoice from a CSV or API")
+    sp.add_argument(
+        "csv",
+        type=Path,
+        nargs="?",
+        help="CSV export from Toggl, Clockify, Harvest, etc. Omit to use [source] in the config",
+    )
     with_config(sp)
     sp.add_argument("-m", "--month", help="month to bill, YYYY-MM (default: last month)")
     sp.add_argument("--issue-date", type=_date_arg, help="invoice date (default: today)")
